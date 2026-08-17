@@ -1,0 +1,56 @@
+name: Build and Upload APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.x'
+
+      - name: Extract All Zip Files
+        run: |
+          mkdir -p extracted
+          for f in *.zip; do
+            if [ -f "$f" ]; then
+              echo "Unzipping $f"
+              unzip -o "$f" -d extracted/
+            fi
+          done
+
+      - name: Locate Flutter Project and Build
+        run: |
+          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
+          if [ -z "$PUBSPEC_PATH" ]; then
+            echo "Error: pubspec.yaml file not found in any directory!"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$PUBSPEC_PATH")
+          echo "Found project at: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+          mkdir -p /tmp/output
+          cp build/app/outputs/flutter-apk/app-release.apk /tmp/output/app-release.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Baskandi-Azan-APK
+          path: /tmp/output/app-release.apk
