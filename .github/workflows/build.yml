@@ -24,29 +24,33 @@ jobs:
         with:
           flutter-version: '3.19.x'
 
-      - name: Extract Zip Files
+      - name: Extract All Zip Files
         run: |
+          mkdir -p extracted
           for f in *.zip; do
             if [ -f "$f" ]; then
               echo "Unzipping $f"
-              unzip -o "$f" -d .
+              unzip -o "$f" -d extracted/
             fi
           done
 
-      - name: Fix Android Permissions
+      - name: Locate Flutter Project and Build
         run: |
-          if [ -f "android/gradlew" ]; then
-            chmod +x android/gradlew
+          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
+          if [ -z "$PUBSPEC_PATH" ]; then
+            echo "Error: pubspec.yaml file not found in any directory!"
+            exit 1
           fi
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
+          PROJECT_DIR=$(dirname "$PUBSPEC_PATH")
+          echo "Found project at: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+          mkdir -p /tmp/output
+          cp build/app/outputs/flutter-apk/app-release.apk /tmp/output/app-release.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: Baskandi-Azan-APK
+          path: /tmp/output/app-release.apk
