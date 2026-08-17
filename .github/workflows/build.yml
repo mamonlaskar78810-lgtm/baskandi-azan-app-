@@ -1,187 +1,20 @@
+name: Build Flutter APK
 
-        
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-            android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
-            <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-        </activity>
-        
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-    </application>
-</manifest>
-import 'package:audioplayers/audioplayers.dart';
+on:
+  push:
+    branches: [ main, master ]
 
-class AlarmService {
-  static final AudioPlayer _audioPlayer = AudioPlayer();
-
-  // আজান চালু করার ফংশন
-  static Future<void> playAzan() async {
-    try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('audio/azan.mp3'));
-    } catch (e) {
-      print("Azan Playback Error: $e");
-    }
-  }
-
-  // আজান বন্ধ করার ফংশন
-  static Future<void> stopAzan() async {
-    await _audioPlayer.stop();
-  }
-}import 'package:flutter/material.dart';
-import 'services/alarm_service.dart';
-
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const BaskandiAzanApp());
-}
-
-class BaskandiAzanApp extends StatelessWidget {
-  const BaskandiAzanApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Baskandi Azan',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  bool isPlaying = false;
-
-  void _toggleAzan() async {
-    if (isPlaying) {
-      await AlarmService.stopAzan();
-      setState(() => isPlaying = false);
-    } else {
-      await AlarmService.playAzan();
-      setState(() => isPlaying = true);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('বাঁশকান্দি মাদ্রাসা আজান'),
-        centerTitle: true,
-        backgroundColor: Colors.green.shade700,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isPlaying ? Icons.volume_up : Icons.access_time_filled,
-                size: 100,
-                color: Colors.green.shade700,
-              ),
-              const SizedBox(height: 30),
-              Text(
-                isPlaying ? "আজান বাজছে..." : "আজান প্লে করতে নিচের বাটনে চাপুন",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 40),
-              ElevatedButton.icon(
-                onPressed: _toggleAzan,
-                icon: Icon(isPlaying ? Icons.stop : Icons.play_arrow),
-                label: Text(isPlaying ? "আজান বন্ধ করুন" : "আজান চালু করুন"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isPlaying ? Colors.red : Colors.green.shade700,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  textStyle: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-import 'alarm_service.dart';
-
-class NotificationService {
-  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  static Future<void> initNotification() async {
-    tz.initializeTimeZones();
-    
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidSettings);
-
-    await _notificationsPlugin.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) async {
-        if (response.payload == 'stop_azan') {
-          await AlarmService.stopAzan();
-        }
-      },
-    );
-  }
-
-  // শিডিউল অনুযায়ী আজান ও নোটিফিকেশন বাজানোর ফংশন
-  static Future<void> scheduleAzanNotification({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime scheduledTime,
-  }) async {
-    await _notificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'azan_channel',
-          'Azan Notifications',
-          channelDescription: 'Channel for Azan Alarms',
-          importance: Importance.max,
-          priority: Priority.high,
-          fullScreenIntent: true,
-          sound: RawResourceAndroidNotificationSound('azan'),
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.x'
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
