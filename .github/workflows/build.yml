@@ -1,3 +1,4 @@
+
 name: Build and Upload APK
 
 on:
@@ -23,28 +24,25 @@ jobs:
         with:
           flutter-version: '3.19.x'
 
-      - name: Extract Zip and Build
+      - name: Extract Zip Files
         run: |
-          mkdir -p extracted_project
           for zip in *.zip; do
             if [ -f "$zip" ]; then
-              unzip -o "$zip" -d extracted_project/
+              unzip -o "$zip"
             fi
           done
 
-          ROOT_DIR=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
-          if [ -z "$ROOT_DIR" ]; then
-            ROOT_DIR=$(find . -maxdepth 2 -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
-          fi
-
-          echo "PROJECT_ROOT=$ROOT_DIR" >> $GITHUB_ENV
-          cd "$ROOT_DIR"
+      - name: Find pubspec.yaml and Build
+        run: |
+          PROJECT_DIR=$(dirname $(find . -name "pubspec.yaml" | head -n 1))
+          echo "Building in: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
           mkdir -p /tmp/output
           cp build/app/outputs/flutter-apk/app-release.apk /tmp/output/app-release.apk
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Baskandi-Azan-APK
