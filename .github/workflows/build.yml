@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,24 +25,25 @@ jobs:
         with:
           flutter-version: '3.19.x'
 
-      - name: Extract Zip File
+      - name: Extract All Zip Files
         run: |
-          if [ -f "Silchar_Salmiya_Azan_AtoZ.zip" ]; then
-            unzip -o "Silchar_Salmiya_Azan_AtoZ.zip" -d extracted_app
-          else
-            echo "Zip file not found!"
-            exit 1
-          fi
+          mkdir -p extracted
+          for f in *.zip; do
+            if [ -f "$f" ]; then
+              echo "Unzipping $f"
+              unzip -o "$f" -d extracted/
+            fi
+          done
 
-      - name: Build Flutter APK
+      - name: Locate Flutter Project and Build
         run: |
           PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
           if [ -z "$PUBSPEC_PATH" ]; then
-            echo "Error: pubspec.yaml file not found inside extracted folder!"
+            echo "Error: pubspec.yaml file not found in any directory!"
             exit 1
           fi
           PROJECT_DIR=$(dirname "$PUBSPEC_PATH")
-          echo "Building in: $PROJECT_DIR"
+          echo "Found project at: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
