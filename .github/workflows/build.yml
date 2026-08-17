@@ -24,17 +24,23 @@ jobs:
         with:
           flutter-version: '3.19.x'
 
-      - name: Extract Zip Files
+      - name: Extract Zip File
         run: |
-          for zip in *.zip; do
-            if [ -f "$zip" ]; then
-              unzip -o "$zip"
-            fi
-          done
+          if [ -f "Silchar_Salmiya_Azan_AtoZ.zip" ]; then
+            unzip -o "Silchar_Salmiya_Azan_AtoZ.zip" -d extracted_app
+          else
+            echo "Zip file not found!"
+            exit 1
+          fi
 
-      - name: Find pubspec.yaml and Build
+      - name: Build Flutter APK
         run: |
-          PROJECT_DIR=$(dirname $(find . -name "pubspec.yaml" | head -n 1))
+          PUBSPEC_PATH=$(find . -name "pubspec.yaml" | head -n 1)
+          if [ -z "$PUBSPEC_PATH" ]; then
+            echo "Error: pubspec.yaml file not found inside extracted folder!"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$PUBSPEC_PATH")
           echo "Building in: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           flutter pub get
