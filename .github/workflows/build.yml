@@ -24,6 +24,15 @@ jobs:
         with:
           flutter-version: '3.19.x'
 
+      - name: Extract Zip Files
+        run: |
+          for f in *.zip; do
+            if [ -f "$f" ]; then
+              echo "Unzipping $f"
+              unzip -o "$f"
+            fi
+          done
+
       - name: Install dependencies
         run: flutter pub get
 
