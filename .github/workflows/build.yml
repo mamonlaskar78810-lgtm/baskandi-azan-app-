@@ -29,9 +29,15 @@ jobs:
           for f in *.zip; do
             if [ -f "$f" ]; then
               echo "Unzipping $f"
-              unzip -o "$f"
+              unzip -o "$f" -d .
             fi
           done
+
+      - name: Fix Android Permissions
+        run: |
+          if [ -f "android/gradlew" ]; then
+            chmod +x android/gradlew
+          fi
 
       - name: Install dependencies
         run: flutter pub get
